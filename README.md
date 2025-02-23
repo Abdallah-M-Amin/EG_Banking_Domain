@@ -1,1 +1,0 @@
-# EG_Banking_Domain
