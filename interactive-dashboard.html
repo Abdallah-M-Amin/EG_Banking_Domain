@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Domain Distribution Dashboard</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.7.0/chart.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        .dashboard-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .controls {
+            margin-bottom: 20px;
+            display: flex;
+            gap: 20px;
+            align-items: center;
+        }
+        select {
+            padding: 8px;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+            font-size: 14px;
+            min-width: 200px;
+        }
+        .chart-container {
+            margin-bottom: 30px;
+            height: 400px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        th {
+            background-color: #f8f9fa;
+            position: sticky;
+            top: 0;
+        }
+        tr:hover {
+            background-color: #f5f5f5;
+        }
+        .data-cell {
+            text-align: right;
+        }
+        .table-container {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <h1>Domain Distribution by Section</h1>
+        
+        <div class="controls">
+            <div>
+                <label for="sectionSelect">Select Section:</label>
+                <select id="sectionSelect"></select>
+            </div>
+            <div>
+                <label for="metricSelect">Select Metric:</label>
+                <select id="metricSelect">
+                    <option value="keywordShare">Keyword Share (%)</option>
+                    <option value="keywords">Total Keywords</option>
+                    <option value="firstPageKeywords">1st Page Keywords</option>
+                    <option value="top3Keywords">Top 3 Keywords</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="chart-container">
+            <canvas id="barChart"></canvas>
+        </div>
+
+        <div class="table-container">
+            <table id="dataTable">
+                <thead>
+                    <tr>
+                        <th>Domain</th>
+                        <th>Keywords</th>
+                        <th>Share (%)</th>
+                        <th>1st Page</th>
+                        <th>Top 3</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        const sectionData = {
+            "Exchange Rates & Currency Converter": [
+                {"domain": "NBE", "keywordShare": 54.52, "keywords": 7947, "firstPageKeywords": 1482, "top3Keywords": 361},
+                {"domain": "CIB", "keywordShare": 43.68, "keywords": 6367, "firstPageKeywords": 495, "top3Keywords": 31},
+                {"domain": "HSBC", "keywordShare": 1.79, "keywords": 261, "firstPageKeywords": 92, "top3Keywords": 30}
+            ],
+            "Cards": [
+                {"domain": "CIB", "keywordShare": 35.69, "keywords": 1928, "firstPageKeywords": 350, "top3Keywords": 73},
+                {"domain": "BM", "keywordShare": 24.75, "keywords": 1337, "firstPageKeywords": 268, "top3Keywords": 49},
+                {"domain": "HSBC", "keywordShare": 19.16, "keywords": 1035, "firstPageKeywords": 347, "top3Keywords": 112},
+                {"domain": "Alex Bank", "keywordShare": 10.98, "keywords": 593, "firstPageKeywords": 151, "top3Keywords": 14},
+                {"domain": "NBD", "keywordShare": 5.98, "keywords": 323, "firstPageKeywords": 44, "top3Keywords": 3},
+                {"domain": "NBE", "keywordShare": 1.85, "keywords": 100, "firstPageKeywords": 58, "top3Keywords": 22},
+                {"domain": "BDC", "keywordShare": 1.59, "keywords": 86, "firstPageKeywords": 17, "top3Keywords": 1}
+            ],
+            "Loan": [
+                {"domain": "BM", "keywordShare": 37.74, "keywords": 1723, "firstPageKeywords": 378, "top3Keywords": 41},
+                {"domain": "CIB", "keywordShare": 30.93, "keywords": 1412, "firstPageKeywords": 334, "top3Keywords": 136},
+                {"domain": "HSBC", "keywordShare": 17.02, "keywords": 777, "firstPageKeywords": 279, "top3Keywords": 63},
+                {"domain": "Alex Bank", "keywordShare": 6.48, "keywords": 296, "firstPageKeywords": 98, "top3Keywords": 31},
+                {"domain": "NBD", "keywordShare": 6.37, "keywords": 291, "firstPageKeywords": 51, "top3Keywords": 6},
+                {"domain": "BDC", "keywordShare": 1.40, "keywords": 64, "firstPageKeywords": 4, "top3Keywords": 0},
+                {"domain": "NBE", "keywordShare": 0.04, "keywords": 2, "firstPageKeywords": 1, "top3Keywords": 1}
+            ],
+            "Accounts & Saving": [
+                {"domain": "CIB", "keywordShare": 43.94, "keywords": 1710, "firstPageKeywords": 334, "top3Keywords": 39},
+                {"domain": "BM", "keywordShare": 32.43, "keywords": 1262, "firstPageKeywords": 204, "top3Keywords": 44},
+                {"domain": "HSBC", "keywordShare": 10.41, "keywords": 405, "firstPageKeywords": 187, "top3Keywords": 23},
+                {"domain": "NBD", "keywordShare": 6.47, "keywords": 252, "firstPageKeywords": 23, "top3Keywords": 3},
+                {"domain": "Alex Bank", "keywordShare": 4.60, "keywords": 179, "firstPageKeywords": 24, "top3Keywords": 3},
+                {"domain": "NBE", "keywordShare": 1.67, "keywords": 65, "firstPageKeywords": 31, "top3Keywords": 22},
+                {"domain": "BDC", "keywordShare": 0.49, "keywords": 19, "firstPageKeywords": 1, "top3Keywords": 0}
+            ],
+            "Loans": [
+                {"domain": "CIB", "keywordShare": 20.95, "keywords": 163, "firstPageKeywords": 89, "top3Keywords": 44},
+                {"domain": "NBE", "keywordShare": 18.64, "keywords": 145, "firstPageKeywords": 47, "top3Keywords": 16},
+                {"domain": "BM", "keywordShare": 16.97, "keywords": 132, "firstPageKeywords": 47, "top3Keywords": 2},
+                {"domain": "Alex Bank", "keywordShare": 14.52, "keywords": 113, "firstPageKeywords": 29, "top3Keywords": 6},
+                {"domain": "HSBC", "keywordShare": 12.34, "keywords": 96, "firstPageKeywords": 24, "top3Keywords": 1},
+                {"domain": "NBD", "keywordShare": 10.41, "keywords": 81, "firstPageKeywords": 19, "top3Keywords": 0},
+                {"domain": "BDC", "keywordShare": 6.17, "keywords": 48, "firstPageKeywords": 0, "top3Keywords": 0}
+            ],
+            "Deposits": [
+                {"domain": "NBE", "keywordShare": 23.08, "keywords": 84, "firstPageKeywords": 55, "top3Keywords": 29},
+                {"domain": "BM", "keywordShare": 20.33, "keywords": 74, "firstPageKeywords": 29, "top3Keywords": 2},
+                {"domain": "CIB", "keywordShare": 18.96, "keywords": 69, "firstPageKeywords": 28, "top3Keywords": 3},
+                {"domain": "Alex Bank", "keywordShare": 17.86, "keywords": 65, "firstPageKeywords": 18, "top3Keywords": 2},
+                {"domain": "HSBC", "keywordShare": 10.71, "keywords": 39, "firstPageKeywords": 18, "top3Keywords": 1},
+                {"domain": "NBD", "keywordShare": 7.42, "keywords": 27, "firstPageKeywords": 1, "top3Keywords": 0},
+                {"domain": "BDC", "keywordShare": 1.65, "keywords": 6, "firstPageKeywords": 0, "top3Keywords": 0}
+            ],
+            "Payroll": [
+                {"domain": "CIB", "keywordShare": 100.00, "keywords": 67, "firstPageKeywords": 6, "top3Keywords": 0}
+            ]
+        };
+
+        let barChart;
+
+        // Populate section dropdown
+        const sectionSelect = document.getElementById('sectionSelect');
+        Object.keys(sectionData).forEach(section => {
+            const option = document.createElement('option');
+            option.value = section;
+            option.textContent = section;
+            sectionSelect.appendChild(option);
+        });
+
+        function updateChart(section, metric) {
+            const data = sectionData[section];
+            const labels = data.map(item => item.domain);
+            const values = data.map(item => item[metric]);
+
+            if (barChart) {
+                barChart.destroy();
+            }
+
+            const ctx = document.getElementById('barChart').getContext('2d');
+            barChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: document.getElementById('metricSelect').options[document.getElementById('metricSelect').selectedIndex].text,
+                        data: values,
+                        backgroundColor: 'rgba(54, 162, 235, 0.5)',
+                        borderColor: 'rgba(54, 162, 235, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        },
+                        x: {
+                            ticks: {
+                                maxRotation: 45,
+                                minRotation: 45
+                            }
+                        }
+                    },
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.dataset.label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    if (metric === 'keywordShare') {
+                                        label += context.parsed.y.toFixed(2) + '%';
+                                    } else {
+                                        label += context.parsed.y.toLocaleString();
+                                    }
+                                    return label;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateTable(section) {
+            const data = sectionData[section];
+            const tbody = document.querySelector('#dataTable tbody');
+            tbody.innerHTML = '';
+
+            data.forEach(item => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${item.domain}</td>
+                    <td class="data-cell">${item.keywords.toLocaleString()}</td>
+                    <td class="data-cell">${item.keywordShare.toFixed(2)}%</td>
+                    <td class="data-cell">${item.firstPageKeywords.toLocaleString()}</td>
+                    <td class="data-cell">${item.top3Keywords.toLocaleString()}</td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        // Event listeners
+        sectionSelect.addEventListener('change', (e) => {
+            const section = e.target.value;
+            const metric = document.getElementById('metricSelect').value;
+            updateChart(section, metric);
+            updateTable(section);
+        });
+
+        document.getElementById('metricSelect').addEventListener('change', (e) => {
+            const section = sectionSelect.value;
+            const metric = e.target.value;
+            updateChart(section, metric);
+        });
+
+        // Initial load
+        updateChart(sectionSelect.value, 'keywordShare');
+        updateTable(sectionSelect.value);
+    </script>
+</body>
+</html>
